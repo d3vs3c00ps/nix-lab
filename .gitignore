@@ -1,0 +1,8 @@
+result
+result-*
+*.iso
+lab/state/
+.DS_Store
+# Lab secrets (keys, passwords): only the encrypted woodpecker.yaml is tracked.
+secrets/*
+!secrets/woodpecker.yaml

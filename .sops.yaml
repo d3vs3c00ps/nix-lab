@@ -1,0 +1,10 @@
+# Who can decrypt which secrets file. Recipients are public age keys.
+#   admin:      secrets/sops-age/keys.txt (edits secrets), gitignored, never committed
+#   woodpecker: derived from the host SSH key (ssh-to-age), decrypts at boot
+keys:
+  - &admin age10wqhc3l2r39ws5zx6q9a3pfh2rx6r9z9wygh8a7rm9uzyqx5nadsh5nuh3
+  - &woodpecker age13gl7at86nwmwgjz7kp3pux46na55teec5x2rs26pyydascpc29qs6gf7sz
+creation_rules:
+  - path_regex: secrets/woodpecker\.yaml$
+    key_groups:
+      - age: [ *admin, *woodpecker ]

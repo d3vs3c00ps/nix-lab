@@ -1,0 +1,23 @@
+# Runs on the woodpecker host with the local backend: steps are shell commands
+# on that host, and the nix daemon there does the builds.
+when:
+  - event: [push, pull_request, manual]
+
+steps:
+  - name: check
+    image: bash
+    commands:
+      # The agent runs as a throwaway systemd user with no home; nix needs one
+      # for its fetch cache.
+      - export HOME="$CI_WORKSPACE/.ci-home"
+      - nix flake check
+
+  - name: build
+    image: bash
+    commands:
+      - export HOME="$CI_WORKSPACE/.ci-home"
+      - |
+        for host in gitea woodpecker k8s-01 k8s-02 k8s-03; do
+          echo "--- $host"
+          nix build ".#nixosConfigurations.$host.config.system.build.toplevel" --no-link --print-out-paths
+        done

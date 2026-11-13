@@ -1,0 +1,43 @@
+# Helm values for CoreDNS (chart coredns/coredns), replacing the NixOS DNS addon.
+# Installed from k8s-01:
+#   helm install coredns coredns/coredns -n kube-system --version 1.48.2 -f /etc/coredns/values.yaml
+#
+# Why not the NixOS addon: it listens on port 10053 in the pod (hard-coded).
+# Without kube-proxy, Cilium translates Service addresses before policy checks,
+# so DNS policies on port 53 never matched and FQDN policies timed out.
+
+replicaCount: 2
+
+# Same name, labels and address as before: kubelets point pods at 10.0.0.254,
+# and DNS policies select pods with k8s-app=kube-dns.
+k8sAppLabelOverride: kube-dns
+service:
+  name: kube-dns
+  clusterIP: 10.0.0.254
+
+servers:
+  - zones:
+      - zone: .
+        use_tcp: true  # serve DNS over TCP too (large answers), as the chart's default does
+    port: 53
+    plugins:
+      - name: errors
+      - name: health
+        configBlock: |-
+          lameduck 5s
+      - name: ready
+      - name: kubernetes
+        parameters: cluster.local in-addr.arpa ip6.arpa
+        configBlock: |-
+          pods insecure
+          fallthrough in-addr.arpa ip6.arpa
+          ttl 30
+      - name: prometheus
+        parameters: 0.0.0.0:9153
+      - name: forward
+        parameters: . /etc/resolv.conf
+      - name: cache
+        parameters: 30
+      - name: loop
+      - name: reload
+      - name: loadbalance
